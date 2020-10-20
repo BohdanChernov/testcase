@@ -12,23 +12,27 @@ import static org.springframework.data.jpa.domain.Specification.where;
 
 @Service
 public class SearchImpl implements Search {
+    private final PhotoDao photoDao;
+
     @Autowired
-    private PhotoDao photoDao;
+    public SearchImpl(PhotoDao photoDao) {
+        this.photoDao = photoDao;
+    }
 
     @Override
     public List<Photo> searchPhotos(String search) {
         return photoDao.findAll(where(hasAuthor(search).or(hasCamera(search).or(hasTag(search)))));
     }
 
-    static Specification<Photo> hasAuthor(String author) {
+    public Specification<Photo> hasAuthor(String author) {
         return (photo, cq, cb) -> cb.like(photo.get("author"), "%" + author + "%");
     }
 
-    static Specification<Photo> hasCamera(String camera) {
+    public Specification<Photo> hasCamera(String camera) {
         return (photo, cq, cb) -> cb.like(photo.get("camera"), "%" + camera + "%");
     }
 
-    static Specification<Photo> hasTag(String tag) {
+    public Specification<Photo> hasTag(String tag) {
         return (photo, cq, cb) -> cb.like(photo.get("tags"), "%" + tag + "%");
     }
 }

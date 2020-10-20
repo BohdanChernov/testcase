@@ -12,10 +12,14 @@ import java.util.List;
 
 @RestController
 public class ImagesController {
+    private final DataRefresher dataRefresher;
+    private final Search search;
+
     @Autowired
-    private DataRefresher dataRefresher;
-    @Autowired
-    private Search search;
+    public ImagesController(DataRefresher dataRefresher, Search search) {
+        this.dataRefresher = dataRefresher;
+        this.search = search;
+    }
 
     @GetMapping("/initData")
     public void cacheImages() {

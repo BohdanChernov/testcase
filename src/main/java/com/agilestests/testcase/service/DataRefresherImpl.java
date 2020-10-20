@@ -19,9 +19,7 @@ import java.util.Map;
 @Service
 @Data
 public class DataRefresherImpl implements DataRefresher {
-    @Autowired
     private PhotoDao photoDao;
-    @Autowired
     private AuthenticationHandler authenticationHandler;
     @Value("${url.get.page.images}")
     private String urlToGetImagePage;
@@ -33,12 +31,18 @@ public class DataRefresherImpl implements DataRefresher {
     private String urlToGet;
     int initPageNumber = 1;
 
+    @Autowired
+    public DataRefresherImpl(PhotoDao photoDao, AuthenticationHandler authenticationHandler) {
+        this.photoDao = photoDao;
+        this.authenticationHandler = authenticationHandler;
+    }
+
     @Override
     public void refreshPhotos() {
         refreshData();
     }
 
-    public String getToken() {
+    public String getNewToken() {
         return authenticationHandler.getNewToken();
     }
 
@@ -48,22 +52,20 @@ public class DataRefresherImpl implements DataRefresher {
     }
 
     public ResponseEntity<ImageResponseDto> tryConnect() {
-        ResponseEntity<ImageResponseDto> response = null;
+        ResponseEntity<ImageResponseDto> response;
         try {
             urlToGet = urlToGetImagePage + initPageNumber;
             RestTemplate restTemplate = new RestTemplate();
             response = restTemplate.exchange(urlToGet, HttpMethod.GET, entity, ImageResponseDto.class);
         } catch (Exception e) {
-            e.printStackTrace();
             initCredentials();
             response = tryConnect();
-
         }
         return response;
     }
 
     public void initCredentials() {
-        this.token = "Bearer " + getToken();
+        this.token = "Bearer " + getNewToken();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", token);
         this.entity = new HttpEntity<>(headers);

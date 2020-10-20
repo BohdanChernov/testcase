@@ -1,8 +1,10 @@
 package com.agilestests.testcase.authentication;
 
+import com.agilestests.testcase.authentication.exceptions.AuthenticationException;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
@@ -21,21 +23,18 @@ public class AuthenticationHandlerImpl implements AuthenticationHandler {
     @Override
     public String getNewToken() {
         initRequestData();
-        TokenDto tokenDto = new RestTemplate().postForObject(urlToFetchData, dataToRequestAuth, TokenDto.class);
-        return isAuthenticationTrue(tokenDto);
+        TokenDto tokenDto;
+        try {
+            tokenDto = new RestTemplate().postForObject(urlToFetchData, dataToRequestAuth, TokenDto.class);
+        } catch (RestClientException e) {
+            throw new AuthenticationException();
+        }
+        return tokenDto.getToken();
     }
 
     public void initRequestData() {
         dataToRequestAuth = new HashMap<>();
         dataToRequestAuth.put("apiKey", apiKey);
-    }
-
-    public String isAuthenticationTrue(TokenDto tokenDto) {
-        if (tokenDto.isAuth()) {
-            return tokenDto.getToken();
-        } else {
-            throw new AuthenticationException();
-        }
     }
 
 }
