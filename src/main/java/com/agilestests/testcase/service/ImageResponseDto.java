@@ -12,3 +12,4 @@ public class ImageResponseDto {
     private int pageCount;
     private boolean hasMore;
 }
+

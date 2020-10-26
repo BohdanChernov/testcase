@@ -1,5 +1,6 @@
 package com.agilestests.testcase.service;
 
+import com.agilestests.testcase.authentication.exceptions.NotFoundException;
 import com.agilestests.testcase.dao.PhotoDao;
 import com.agilestests.testcase.models.Photo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,11 @@ public class SearchImpl implements Search {
 
     @Override
     public List<Photo> searchPhotos(String search) {
-        return photoDao.findAll(where(hasAuthor(search).or(hasCamera(search).or(hasTag(search)))));
+        List<Photo> photos = photoDao.findAll(where(hasAuthor(search).or(hasCamera(search).or(hasTag(search)))));
+        if (photos.size() == 0) {
+            throw new NotFoundException(search);
+        }
+        return photos;
     }
 
     public Specification<Photo> hasAuthor(String author) {

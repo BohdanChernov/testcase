@@ -15,4 +15,11 @@ public class ExceptionAdvice {
     public String authenticationExceptionHandler(AuthenticationException ex) {
         return ex.getMessage();
     }
+
+    @ResponseBody
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String NotFoundExceptionHandler(NotFoundException ex) {
+        return ex.getMessage();
+    }
 }

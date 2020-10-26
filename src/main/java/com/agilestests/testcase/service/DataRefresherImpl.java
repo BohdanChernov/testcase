@@ -3,6 +3,9 @@ package com.agilestests.testcase.service;
 import com.agilestests.testcase.authentication.AuthenticationHandler;
 import com.agilestests.testcase.dao.PhotoDao;
 import com.agilestests.testcase.models.Photo;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @Data
@@ -25,6 +29,7 @@ public class DataRefresherImpl implements DataRefresher {
     private String urlToGetImagePage;
     @Value("${url.get.page.images.details}")
     private String urlToGetPhotoDetails;
+    private ObjectMapper objectMapper;
 
     private String token;
     private HttpEntity<String> entity;
@@ -32,13 +37,16 @@ public class DataRefresherImpl implements DataRefresher {
     int initPageNumber = 1;
 
     @Autowired
-    public DataRefresherImpl(PhotoDao photoDao, AuthenticationHandler authenticationHandler) {
+    public DataRefresherImpl(PhotoDao photoDao, AuthenticationHandler authenticationHandler, ObjectMapper objectMapper) {
         this.photoDao = photoDao;
         this.authenticationHandler = authenticationHandler;
+        this.objectMapper = objectMapper;
     }
 
     @Override
     public void refreshPhotos() {
+        photoDao.deleteAll();
+        initCredentials();
         refreshData();
     }
 
@@ -72,11 +80,11 @@ public class DataRefresherImpl implements DataRefresher {
     }
 
     public void getAnotherPages(ResponseEntity<ImageResponseDto> response) {
-        while (response.getBody().isHasMore()) {
+        while (Objects.requireNonNull(response.getBody()).isHasMore()) {
             RestTemplate restTemplate = new RestTemplate();
             urlToGet = urlToGetImagePage + initPageNumber;
             response = restTemplate.exchange(urlToGet, HttpMethod.GET, entity, ImageResponseDto.class);
-            processPage(response.getBody().getPictures());
+            processPage(Objects.requireNonNull(response.getBody()).getPictures());
             initPageNumber += 1;
         }
     }
@@ -91,7 +99,14 @@ public class DataRefresherImpl implements DataRefresher {
 
     public Photo getPhotoDetails(String id) {
         String url = urlToGetPhotoDetails + id;
-        ResponseEntity<Photo> response = new RestTemplate().exchange(url, HttpMethod.GET, entity, Photo.class);
-        return response.getBody();
+        String response = new RestTemplate().exchange(url, HttpMethod.GET, entity, String.class).getBody();
+        Photo photo = null;
+        try {
+            photo = objectMapper.readValue(response, new TypeReference<>() {
+            });
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return photo;
     }
 }

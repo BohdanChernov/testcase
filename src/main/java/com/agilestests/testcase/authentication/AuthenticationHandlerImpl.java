@@ -27,9 +27,10 @@ public class AuthenticationHandlerImpl implements AuthenticationHandler {
         try {
             tokenDto = new RestTemplate().postForObject(urlToFetchData, dataToRequestAuth, TokenDto.class);
         } catch (RestClientException e) {
-            throw new AuthenticationException();
+            throw new AuthenticationException(apiKey);
         }
-        return tokenDto.getToken();
+
+        return tokenDto != null ? tokenDto.getToken() : "No token";
     }
 
     public void initRequestData() {
