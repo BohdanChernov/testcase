@@ -1,67 +1,74 @@
 package com.agilestests.testcase.controllers;
 
-import com.agilestests.testcase.TestcaseApplication;
-import com.agilestests.testcase.authentication.AuthenticationHandlerImpl;
 import com.agilestests.testcase.dao.PhotoDao;
 import com.agilestests.testcase.models.Photo;
-import com.agilestests.testcase.service.DataRefresherImpl;
-import com.agilestests.testcase.service.SearchImpl;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import org.junit.Rule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.Rollback;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.Collections;
 import java.util.List;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@WebMvcTest
-@ContextConfiguration(classes = {TestcaseApplication.class,
-        ImagesController.class,
-        DataRefresherImpl.class,
-        SearchImpl.class,
-        AuthenticationHandlerImpl.class})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ExtendWith(SpringExtension.class)
+@ActiveProfiles("test")
+@Rollback
 class ImagesControllerTestIT {
-
-    @MockBean
+    @Rule
+    public WireMockRule wireMockRule = new WireMockRule(8089);
+    @Autowired
     private PhotoDao photoDao;
-
     @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private TestRestTemplate restTemplate;
 
     @Test
-    void cacheImages() throws Exception {
-        mockMvc.perform(get("/initData")).andExpect(status().isOk());
+    void cacheImages() {
+        ResponseEntity<String> response = restTemplate.getForEntity("/initData", String.class);
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
-    void getSearchPhotos() throws Exception {
+    void getSearchPhotosAndGetListSuccessfully() throws Exception {
         Photo photoDefault = new Photo("1",
                 "Artur",
                 "Canon",
-                "#camera, #artur, #canon",
-                "http://url.com/cropped_picture.jpeg",
-                "http://url.com/full_picture.jpeg");
-        List<Photo> list = Collections.singletonList(photoDefault);
-        Mockito.when(photoDao.findAll(Mockito.any(Specification.class))).thenReturn(list);
-        String photosFromResponseJson = this.mockMvc.perform(get("/search/Artur"))
-                .andReturn().getResponse().getContentAsString();
+                "#Artur, #Canon",
+                "http://images.com/cropped_picture.jpeg",
+                "http://images.com/full_picture.jpeg");
+        photoDao.save(photoDefault);
+
+        ResponseEntity<String> photosFromResponseJson = restTemplate.getForEntity("/search/Artur", String.class);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        CollectionType mapCollectionType = objectMapper.getTypeFactory()
+                .constructCollectionType(List.class, Photo.class);
+
         List<Photo> photoList = objectMapper
-                .readValue(photosFromResponseJson,
-                        new TypeReference<>() {
-                        });
-        Assertions.assertEquals(photoDefault, photoList.get(0));
+                .readValue(photosFromResponseJson.getBody(), mapCollectionType);
+        Photo photoFromRequest = photoList.get(0);
+        Assertions.assertEquals(photoDefault, photoFromRequest);
+        Assertions.assertEquals(HttpStatus.OK, photosFromResponseJson.getStatusCode());
+    }
+
+    @Test
+    void getSearchPhotosAndGetNotFoundException() {
+        ResponseEntity<String> response = restTemplate.getForEntity("/search/NotArtur", String.class);
+
+        String expectedMessage = "Nothing found with the search term: NotArtur";
+        String actualMessage = response.getBody();
+        Assertions.assertTrue(actualMessage.contains(expectedMessage));
+
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 }

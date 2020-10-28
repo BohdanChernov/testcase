@@ -4,7 +4,6 @@ import com.agilestests.testcase.authentication.AuthenticationHandler;
 import com.agilestests.testcase.dao.PhotoDao;
 import com.agilestests.testcase.models.Photo;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +22,7 @@ import java.util.Objects;
 @Service
 @Data
 public class DataRefresherImpl implements DataRefresher {
+    int initPageNumber = 1;
     private PhotoDao photoDao;
     private AuthenticationHandler authenticationHandler;
     @Value("${url.get.page.images}")
@@ -30,11 +30,9 @@ public class DataRefresherImpl implements DataRefresher {
     @Value("${url.get.page.images.details}")
     private String urlToGetPhotoDetails;
     private ObjectMapper objectMapper;
-
     private String token;
     private HttpEntity<String> entity;
     private String urlToGet;
-    int initPageNumber = 1;
 
     @Autowired
     public DataRefresherImpl(PhotoDao photoDao, AuthenticationHandler authenticationHandler, ObjectMapper objectMapper) {
@@ -102,8 +100,7 @@ public class DataRefresherImpl implements DataRefresher {
         String response = new RestTemplate().exchange(url, HttpMethod.GET, entity, String.class).getBody();
         Photo photo = null;
         try {
-            photo = objectMapper.readValue(response, new TypeReference<>() {
-            });
+            photo = objectMapper.readValue(response, Photo.class);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
