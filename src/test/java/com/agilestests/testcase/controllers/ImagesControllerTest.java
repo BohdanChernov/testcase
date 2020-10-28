@@ -4,8 +4,8 @@ import com.agilestests.testcase.authentication.exceptions.NotFoundException;
 import com.agilestests.testcase.models.Photo;
 import com.agilestests.testcase.service.DataRefresher;
 import com.agilestests.testcase.service.Search;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,11 +62,12 @@ class ImagesControllerTest {
                 .andReturn().getResponse().getContentAsString();
 
         ObjectMapper objectMapper = new ObjectMapper();
-        CollectionType mapCollectionType = objectMapper.getTypeFactory()
-                .constructCollectionType(List.class, Photo.class);
 
-        List<Photo> photoList = objectMapper
-                .readValue(photosFromResponseJson, mapCollectionType);
+        TypeReference<List<Photo>> typeReference = new TypeReference<>() {
+        };
+
+        List<Photo> photoList = objectMapper.readValue(photosFromResponseJson, typeReference);
+
         Photo photoFromRequest = photoList.get(0);
         Assertions.assertEquals(photoDefault, photoFromRequest);
     }

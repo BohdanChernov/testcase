@@ -17,21 +17,21 @@ public class Photo {
     private String author;
     private String camera;
     private String tags;
-    private String cropped_picture;
-    private String full_picture;
+    private String croppedPicture;
+    private String fullPicture;
 
     @JsonCreator
     public Photo(@JsonProperty("id") String id,
                  @JsonProperty("author") String author,
                  @JsonProperty("camera") String camera,
                  @JsonProperty("tags") String tags,
-                 @JsonProperty("cropped_picture") String cropped_picture,
-                 @JsonProperty("full_picture") String full_picture) {
+                 @JsonProperty("cropped_picture") String croppedPicture,
+                 @JsonProperty("full_picture") String fullPicture) {
         this.id = id;
         this.author = author;
         this.camera = camera;
         this.tags = tags;
-        this.cropped_picture = cropped_picture;
-        this.full_picture = full_picture;
+        this.croppedPicture = croppedPicture;
+        this.fullPicture = fullPicture;
     }
 }

@@ -13,10 +13,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -63,7 +63,7 @@ public class DataRefresherImpl implements DataRefresher {
             urlToGet = urlToGetImagePage + initPageNumber;
             RestTemplate restTemplate = new RestTemplate();
             response = restTemplate.exchange(urlToGet, HttpMethod.GET, entity, ImageResponseDto.class);
-        } catch (Exception e) {
+        } catch (HttpClientErrorException.Unauthorized e) {
             initCredentials();
             response = tryConnect();
         }
@@ -87,9 +87,9 @@ public class DataRefresherImpl implements DataRefresher {
         }
     }
 
-    public void processPage(List<Map<String, String>> list) {
-        for (Map<String, String> stringStringLinkedHashMap : list) {
-            String id = stringStringLinkedHashMap.get("id");
+    public void processPage(List<Photo> list) {
+        for (Photo photoFromList : list) {
+            String id = photoFromList.getId();
             Photo photo = getPhotoDetails(id);
             photoDao.save(photo);
         }
